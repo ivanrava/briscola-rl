@@ -4,7 +4,7 @@ from briscola_rl.game_rules import select_winner
 
 
 class EpsGreedyPlayer(BasePlayer):
-    def __init__(self, epsilon):
+    def __init__(self, epsilon, order_idx: int):
         """
         :param epsilon: controls exploration-exploitation tradeoff (high epsilon, more exploration).
         Should be low (e.g. 0.1).
@@ -12,6 +12,7 @@ class EpsGreedyPlayer(BasePlayer):
         super().__init__()
         self.epsilon = epsilon
         self.name = 'EpsGreedyPlayer'
+        self.order_idx = order_idx
 
     def choose_card(self) -> int:
         if self.epsilon > random():
@@ -21,7 +22,7 @@ class EpsGreedyPlayer(BasePlayer):
         return self.greedy_action()
 
     def greedy_action(self):
-        im_first = self.get_public_state().order[0] == self.name
+        im_first = self.get_public_state().order == self.order_idx
         if im_first:
             return self.card_min_points()
         else:

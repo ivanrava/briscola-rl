@@ -1,7 +1,7 @@
 values_points = {1: 11, 2: 0, 3: 10, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 2, 12: 3, 13: 4}
 
 
-def select_winner(table: list, briscola):
+def select_winner(table: list, briscola) -> int:
     first = table[0]
     second = table[1]
     first_points = values_points[first.value]

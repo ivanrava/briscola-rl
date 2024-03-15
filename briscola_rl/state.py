@@ -23,7 +23,7 @@ class PublicState:
     other_taken: List[Card]
     turn: int
     briscola: Card
-    order: List[str]
+    order: int
 
     def as_dict(self) -> dict:
         return dict(
