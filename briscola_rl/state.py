@@ -23,7 +23,7 @@ class PublicState:
     other_taken: List[Card]
     turn: int
     briscola: Card
-    my_turn_player: int
+    order: List[str]
 
     def as_dict(self) -> dict:
         return dict(
@@ -38,5 +38,5 @@ class PublicState:
             other_taken=pad_card_vector([c.vector() for c in self.other_taken], 40),
             turn=self.turn,
             briscola=self.briscola.vector(),
-            order=self.my_turn_player
+            order=self.order
         )
