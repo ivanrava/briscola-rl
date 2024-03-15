@@ -10,7 +10,7 @@ class Suit:
     __ohe = np.eye(4)
 
     @classmethod
-    def get_seed(cls, i: Union[str, int]):
+    def get_suit(cls, i: Union[str, int]):
         assert 0 <= i <= 3, i
         if isinstance(i, str):
             return cls.__dict__[i.capitalize()]
