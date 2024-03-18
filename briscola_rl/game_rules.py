@@ -6,12 +6,12 @@ def select_winner(table: list, briscola) -> int:
     second = table[1]
     first_points = values_points[first.value]
     second_points = values_points[second.value]
-    first_briscola = first.seed == briscola.seed
-    second_briscola = second.seed == briscola.seed
+    first_briscola = first.suit == briscola.suit
+    second_briscola = second.suit == briscola.suit
     if first_briscola:
         first_points += 100
     if second_briscola:
         second_points += 100
-    if not first_briscola and not second_briscola and second.seed != first.seed:
+    if not first_briscola and not second_briscola and second.suit != first.suit:
         second_points -= 100
     return second_points > first_points
