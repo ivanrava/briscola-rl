@@ -84,6 +84,8 @@ class BriscolaCustomEnemyPlayer(gym.Env):
     def step(self, action):
         assert action in self.action_space
         self._turn += 1
+        while action >= len(self.my_player.hand):
+            action = action - 1
         my_card = self.my_player.hand.pop(action)
         self._table.append(my_card)
         if self._turn_my_player == 0:
@@ -94,7 +96,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         i_winner = select_winner(self._table, self.briscola)
         reward = self._state_update_after_winner(i_winner)
         self._draw_phase()
-        if self._turn_my_player == 1:
+        if self._turn_my_player == 1 and not len(self.other_player.hand) == 0:
             other_card = self.other_player.play_card()
             self._table.append(other_card)
         return self._get_obs(), reward, self.is_terminated(), False, self._get_info()
@@ -106,7 +108,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         """
         self.__logger.info(f'Turn Winner is {self.players[i_winner].name}')
         reward = gained_points = sum(values_points[c.value] for c in self._table)
-        self._points[0] += gained_points
+        self._points[i_winner] += gained_points
         self._my_taken.append(self._table[self._turn_my_player])
         self._other_taken.append(self._table[1 - self._turn_my_player])
         gained_points_my_player = gained_points_other_player = gained_points
@@ -123,7 +125,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.other_player.notify_turn_winner(gained_points_other_player)
         self._table = []
         self.__logger.info(f'Winner gained {gained_points} points')
-        self.__logger.info(f'Current table points: {self._points}')
+        self.__logger.info(f'Current game points: {self._points}')
         return reward
 
     def _draw_phase(self):
