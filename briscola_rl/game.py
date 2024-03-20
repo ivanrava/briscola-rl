@@ -103,7 +103,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
             other_card = self.other_player.play_card()
             self._table.append(other_card)
         self.__logger.info(f'Table: {self._table}')
-        # i_winner: 0 -> I win, 1 -> Enemy wins :(
+        # i_winner: 0 -> Wins first player, 1 -> Wins second player
         i_winner = select_winner(self._table, self.briscola)
         reward = self._state_update_after_winner(i_winner)
         self._draw_phase()
@@ -115,16 +115,17 @@ class BriscolaCustomEnemyPlayer(gym.Env):
 
     def _state_update_after_winner(self, i_winner: int):
         """
-        :param i_winner: 0 -> I win, 1 -> I lose
+        :param i_winner: 0 -> Wins first, 1 -> Wins second
         :return: The reward
         """
+        i_winner = 0 if self._turn_my_player == i_winner else 1
         self.__logger.info(f'Turn Winner is {self.players[i_winner].name}')
         reward = gained_points = sum(values_points[c.value] for c in self._table)
         self._points[i_winner] += gained_points
         self._my_taken.append(self._table[self._turn_my_player])
         self._other_taken.append(self._table[1 - self._turn_my_player])
         gained_points_my_player = gained_points_other_player = gained_points
-        if i_winner == self._turn_my_player:
+        if i_winner == 0:
             self._my_points += gained_points
             self._turn_my_player = 0
             gained_points_other_player = gained_points_other_player * -1
