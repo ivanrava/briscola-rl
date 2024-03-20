@@ -7,5 +7,5 @@ class PseudoRandomPlayer(BasePlayer):
         super().__init__()
         self.name = 'RandomPlayer'
 
-    def choose_card(self) -> int:
+    def choose_card(self, _state) -> int:
         return randint(0, len(self.hand) - 1) if len(self.hand) > 1 else 0
