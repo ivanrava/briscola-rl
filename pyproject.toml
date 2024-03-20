@@ -10,6 +10,7 @@ python = "^3.10"
 gymnasium = "^0.29.1"
 stable-baselines3 = {extras = ["extra"], version = "^2.2.1"}
 pytest = "^8.1.1"
+wandb = "^0.16.4"
 
 
 [build-system]

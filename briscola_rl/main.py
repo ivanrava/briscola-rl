@@ -1,55 +1,47 @@
-import logging
+from stable_baselines3 import PPO, DQN, A2C
 
-import tqdm
-from stable_baselines3 import PPO, DQN, A2C, SAC
-from stable_baselines3.common.env_checker import check_env
+import wandb
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv
+from wandb.integration.sb3 import WandbCallback
 
+from briscola_rl.evaluate import test_match
 from briscola_rl.game import BriscolaRandomPlayer, BriscolaEpsGreedyPlayer
 
+config = {
+    "policy_type": "MlpPolicy",
+    "total_timesteps": 50_000,
+    "opponent": "EpsGreedyPlayer"
+}
+run = wandb.init(
+    project="briscola-rl",
+    config=config,
+    sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
+    monitor_gym=False,
+    save_code=False,
+)
 
-def test_match(number_of_rounds: int = 10_000):
-    logging.basicConfig(filename='test_match.log', level=logging.INFO)
-    logger = logging.getLogger('test_match')
-    total_reward = 0
-    wins = 0
-    draws = 0
-    losses = 0
-    for _ in tqdm.tqdm(range(number_of_rounds)):
-        reward = test_round(logger)
-        total_reward += reward
-
-        if reward > 0:
-            wins += 1
-        elif reward == 0:
-            draws += 1
-        else:
-            losses += 1
-    return (
-        total_reward / number_of_rounds,
-        wins / number_of_rounds,
-        draws / number_of_rounds,
-        losses / number_of_rounds
-    )
-
-
-def test_round(logger: logging.Logger) -> float:
-    logger.info("Starting new round")
-    obs, _ = env.reset()
-    total_reward = 0
-    while True:
-        action, _states = model.predict(obs)
-        obs, rewards, finisheds, _, info = env.step(action)
-        total_reward += rewards
-        if finisheds:
-            logger.info("Finished round")
-            return total_reward
-
+def make_env():
+    if config["opponent"] == "RandomPlayer":
+        env = BriscolaRandomPlayer()
+    else:
+        env = BriscolaEpsGreedyPlayer()
+    env = Monitor(env)
+    env = DummyVecEnv([lambda: env])
+    return env
 
 if __name__ == '__main__':
-    env = BriscolaRandomPlayer()
-    check_env(env, warn=True)
+    env = make_env()
+    model = PPO(config['policy_type'], env, verbose=True, tensorboard_log=f"runs/{run.id}")
+    model.learn(
+        total_timesteps=config['total_timesteps'],
+        callback=WandbCallback(
+            gradient_save_freq=100,
+            model_save_path=f'models/{run.id}',
+            model_save_freq=1000,
+            verbose=2
+        )
+    )
+    run.finish()
 
-    model = PPO('MlpPolicy', env, verbose=True)
-    model.learn(total_timesteps=100_000, progress_bar=True)
-
-    print(test_match())
+    # print(test_match(env, model))
