@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import List
 
-import numpy as np
-
 from briscola_rl.cards import Card, NULLCARD_VECTOR
 
 
