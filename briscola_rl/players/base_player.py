@@ -4,7 +4,7 @@ from briscola_rl.state import PublicState
 
 
 class BasePlayer(ABC):
-    def __init__(self, obs_public_state=None):
+    def __init__(self, obs_public_state: PublicState = None):
         self.hand = []
         self.name = None
         self.__obs_public_state = obs_public_state
@@ -14,11 +14,11 @@ class BasePlayer(ABC):
         self.hand = []
 
     @abstractmethod
-    def choose_card(self) -> int:
+    def choose_card(self, state: PublicState) -> int:
         pass
 
-    def play_card(self):
-        i = self.choose_card()
+    def play_card(self, state: PublicState):
+        i = self.choose_card(state)
         try:
             c = self.hand.pop(i)
             self.__logger.info(f'{self.name} plays {c}')
@@ -33,14 +33,8 @@ class BasePlayer(ABC):
     def is_empty_hand(self):
         return len(self.hand) == 0
 
-    def get_public_state(self) -> 'PublicState':
-        return self.__obs_public_state()
-
     def notify_turn_winner(self, points):
         pass
 
     def notify_game_winner(self, name: str):
         pass
-
-    def set_observable_public_state(self, obs):
-        self.__obs_public_state = obs

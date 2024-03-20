@@ -1,6 +1,7 @@
 from briscola_rl.players.base_player import BasePlayer
 from random import randint, random
 from briscola_rl.game_rules import select_winner
+from state import PublicState
 
 
 class EpsGreedyPlayer(BasePlayer):
@@ -14,24 +15,23 @@ class EpsGreedyPlayer(BasePlayer):
         self.name = 'EpsGreedyPlayer'
         self.order_idx = order_idx
 
-    def choose_card(self) -> int:
+    def choose_card(self, state: PublicState) -> int:
         if self.epsilon > random():
             # Exploration
             return randint(0, len(self.hand) - 1) if len(self.hand) > 1 else 0
         # Exploitation
-        return self.greedy_action()
+        return self.greedy_action(state)
 
-    def greedy_action(self):
-        im_first = self.get_public_state().order == self.order_idx
+    def greedy_action(self, state: PublicState):
+        im_first = state.order == self.order_idx
         if im_first:
             return self.card_min_points()
         else:
-            return self.card_max_gain()
+            return self.card_max_gain(state)
 
-    def card_max_gain(self):
+    def card_max_gain(self, state: PublicState):
         i_max = -1
         max_gain = -100
-        state = self.get_public_state()
         table = state.table[:]
         table.append(None)
         for i, c in enumerate(self.hand):

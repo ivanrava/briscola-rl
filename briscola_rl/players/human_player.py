@@ -6,5 +6,5 @@ class HumanPlayer(BasePlayer):
         super().__init__()
         self.name = 'HumanPlayer'
 
-    def choose_card(self) -> int:
+    def choose_card(self, _state) -> int:
         return -1

@@ -73,7 +73,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self._log_hands()
         self.deck.cards.append(self.briscola)
         if self._turn_my_player == 1:
-            other_card = self.other_player.play_card()
+            other_card = self.other_player.play_card(self.public_state())
             self._table.append(other_card)
 
         return self._get_obs(), self._get_info()
@@ -100,7 +100,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.__logger.info(f"Agent plays {my_card}")
         self._table.append(my_card)
         if self._turn_my_player == 0:
-            other_card = self.other_player.play_card()
+            other_card = self.other_player.play_card(self.public_state())
             self._table.append(other_card)
         self.__logger.info(f'Table: {self._table}')
         # i_winner: 0 -> Wins first player, 1 -> Wins second player
@@ -109,7 +109,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self._draw_phase()
         self._log_turn_leader()
         if self._turn_my_player == 1 and not len(self.other_player.hand) == 0:
-            other_card = self.other_player.play_card()
+            other_card = self.other_player.play_card(self.public_state())
             self._table.append(other_card)
         return self._get_obs(), reward, self.is_terminated(), False, self._get_info()
 
