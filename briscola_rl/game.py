@@ -62,18 +62,28 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self._other_points = 0
         self._points = [0, 0]
         self._turn_my_player = self.np_random.integers(0, high=1, endpoint=True)
+        self._log_turn_leader()
         self.players = [self.my_player, self.other_player]
         self.briscola: Card = self.deck.draw()
+        self.__logger.info(f'Briscola is {self.briscola}')
         for _ in range(3):
             self.my_player.hand.append(self.deck.draw())
         for _ in range(3):
             self.other_player.hand.append(self.deck.draw())
+        self._log_hands()
         self.deck.cards.append(self.briscola)
         if self._turn_my_player == 1:
             other_card = self.other_player.play_card()
             self._table.append(other_card)
 
         return self._get_obs(), self._get_info()
+
+    def _log_hands(self):
+        self.__logger.info(f'Player hand is: {self.my_player.hand}')
+        self.__logger.info(f'Enemy hand is: {self.other_player.hand}')
+
+    def _log_turn_leader(self):
+        self.__logger.info(f'Starts {self.players[self._turn_my_player].name}')
 
     def _get_obs(self):
         return spaces.flatten(self.observation_space_nested, self.public_state().as_dict())
@@ -87,6 +97,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         while action >= len(self.my_player.hand):
             action = action - 1
         my_card = self.my_player.hand.pop(action)
+        self.__logger.info(f"Agent plays {my_card}")
         self._table.append(my_card)
         if self._turn_my_player == 0:
             other_card = self.other_player.play_card()
@@ -96,6 +107,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         i_winner = select_winner(self._table, self.briscola)
         reward = self._state_update_after_winner(i_winner)
         self._draw_phase()
+        self._log_turn_leader()
         if self._turn_my_player == 1 and not len(self.other_player.hand) == 0:
             other_card = self.other_player.play_card()
             self._table.append(other_card)
@@ -140,6 +152,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
                 c_my_player = c2
             self.my_player.hand.append(c_my_player)
             self.other_player.hand.append(c_other_player)
+            self._log_hands()
 
     def public_state(self):
         return PublicState(self._my_points, self._other_points, self.my_player.hand,

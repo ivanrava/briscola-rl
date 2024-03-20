@@ -21,7 +21,7 @@ class BasePlayer(ABC):
         i = self.choose_card()
         try:
             c = self.hand.pop(i)
-            self.__logger.info(f'{self.name} discard {c}')
+            self.__logger.info(f'{self.name} plays {c}')
             return c
         except IndexError as e:
             print('hand len: ', len(self.hand), 'i: ', i)
