@@ -19,7 +19,7 @@ class Card:
         return self.value, self.suit, self.points
 
     def __repr__(self):
-        return f'{self.value} of {self.suit}'
+        return f'{self.value} of {Suit.str_repr(self.suit)}'
 
 
 NULLCARD_VECTOR = (0, 0, 0)

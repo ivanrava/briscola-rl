@@ -28,3 +28,12 @@ class Suit:
     @classmethod
     def ohe_repr(cls, suit):
         return cls.__ohe[suit - 1, :]
+
+    @classmethod
+    def str_repr(cls, suit: int) -> str:
+        return {
+            cls.Swords: "Swords",
+            cls.Coins: "Coins",
+            cls.Cups: "Cups",
+            cls.Batons: "Batons"
+        }[suit]
