@@ -17,7 +17,7 @@ from briscola_rl.players.human_player import HumanPlayer
 class BriscolaCustomEnemyPlayer(gym.Env):
     metadata = {'render_modes': []}
 
-    def __init__(self, other_player: BasePlayer, played: bool = True):
+    def __init__(self, other_player: BasePlayer, played: bool = True, big_reward: bool = False):
         # Define the action space
         self.action_space = spaces.Discrete(3)  # drop i-th card
         # Define the observation space
@@ -41,10 +41,12 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.observation_space = spaces.flatten_space(self.observation_space_nested)
         self.played = played
 
+        self.big_reward = big_reward
+
         self.my_player: BasePlayer = HumanPlayer()
         self.other_player = other_player
         self.players = [self.my_player, self.other_player]
-        self.reward_range = (-22, 22)
+        self.reward_range = (-22, 22) if not big_reward else (-122, 122)
         self.deck = None
         self.briscola: Card = None
         self.__logger = logging.getLogger('Briscola')
@@ -141,7 +143,14 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self._table = []
         self.__logger.info(f'Winner gained {gained_points} points')
         self.__logger.info(f'Current game points: {self._points}')
-        return reward
+
+        big_reward = 0
+        if self.big_reward:
+            if self._points[0] > 60:
+                big_reward = 100
+            elif self._points[1] > 60:
+                big_reward = -100
+        return reward + big_reward
 
     def _draw_phase(self):
         if not self.deck.is_empty():
@@ -173,11 +182,11 @@ class BriscolaCustomEnemyPlayer(gym.Env):
 
 class BriscolaRandomPlayer(BriscolaCustomEnemyPlayer):
 
-    def __init__(self, played: bool = True):
-        super(BriscolaRandomPlayer, self).__init__(PseudoRandomPlayer(), played=played)
+    def __init__(self, played: bool = True, big_reward: bool = False):
+        super(BriscolaRandomPlayer, self).__init__(PseudoRandomPlayer(), played=played, big_reward=big_reward)
 
 
 class BriscolaEpsGreedyPlayer(BriscolaCustomEnemyPlayer):
 
-    def __init__(self, eps: float = 0.2, played: bool = True):
-        super(BriscolaEpsGreedyPlayer, self).__init__(EpsGreedyPlayer(eps, 1), played=played)
+    def __init__(self, eps: float = 0.2, played: bool = True, big_reward: bool = False):
+        super(BriscolaEpsGreedyPlayer, self).__init__(EpsGreedyPlayer(eps, 1), played=played, big_reward=big_reward)

@@ -14,8 +14,9 @@ config = {
     "opponent": "EpsGreedyPlayer",
     "eps": 0.03,
     "exploration_fraction": 0.8,
-    "learning_rate": 0.01,
-    "played": False
+    "learning_rate": 0.03,
+    "played": False,
+    "big_reward": False
 }
 run = wandb.init(
     project="briscola-rl",
@@ -25,18 +26,21 @@ run = wandb.init(
     save_code=False,
 )
 
+
 def make_env():
     if config["opponent"] == "RandomPlayer":
-        env = BriscolaRandomPlayer(played=config['played'])
+        env = BriscolaRandomPlayer(played=config['played'], big_reward=config['big_reward'])
     else:
-        env = BriscolaEpsGreedyPlayer(eps=config['eps'], played=config['played'])
+        env = BriscolaEpsGreedyPlayer(eps=config['eps'], played=config['played'], big_reward=config['big_reward'])
     env = Monitor(env)
     env = DummyVecEnv([lambda: env])
     return env
 
+
 if __name__ == '__main__':
     env = make_env()
-    model = DQN(config['policy_type'], env, verbose=True, tensorboard_log=f"runs/{run.id}", exploration_fraction=config['exploration_fraction'], learning_rate=config['learning_rate'])
+    model = DQN(config['policy_type'], env, verbose=True, tensorboard_log=f"runs/{run.id}",
+                exploration_fraction=config['exploration_fraction'], learning_rate=config['learning_rate'])
     model.learn(
         total_timesteps=config['total_timesteps'],
         callback=WandbCallback(
