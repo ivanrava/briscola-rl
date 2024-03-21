@@ -10,8 +10,12 @@ from briscola_rl.game import BriscolaRandomPlayer, BriscolaEpsGreedyPlayer
 
 config = {
     "policy_type": "MlpPolicy",
-    "total_timesteps": 50_000,
-    "opponent": "EpsGreedyPlayer"
+    "total_timesteps": 2_500_000,
+    "opponent": "EpsGreedyPlayer",
+    "eps": 0.03,
+    "exploration_fraction": 0.8,
+    "learning_rate": 0.01,
+    "played": False
 }
 run = wandb.init(
     project="briscola-rl",
@@ -23,16 +27,16 @@ run = wandb.init(
 
 def make_env():
     if config["opponent"] == "RandomPlayer":
-        env = BriscolaRandomPlayer()
+        env = BriscolaRandomPlayer(played=config['played'])
     else:
-        env = BriscolaEpsGreedyPlayer()
+        env = BriscolaEpsGreedyPlayer(eps=config['eps'], played=config['played'])
     env = Monitor(env)
     env = DummyVecEnv([lambda: env])
     return env
 
 if __name__ == '__main__':
     env = make_env()
-    model = PPO(config['policy_type'], env, verbose=True, tensorboard_log=f"runs/{run.id}")
+    model = DQN(config['policy_type'], env, verbose=True, tensorboard_log=f"runs/{run.id}", exploration_fraction=config['exploration_fraction'], learning_rate=config['learning_rate'])
     model.learn(
         total_timesteps=config['total_timesteps'],
         callback=WandbCallback(

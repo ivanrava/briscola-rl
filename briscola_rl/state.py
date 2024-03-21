@@ -19,13 +19,13 @@ class PublicState:
     other_hand_size: int  # TODO: to keep or not to keep?
     remaining_deck_cards: int
     table: List[Card]
-    my_taken: List[Card]
-    other_taken: List[Card]
+    my_played: List[Card]
+    other_played: List[Card]
     turn: int
     briscola: Card
     order: int
 
-    def as_dict(self) -> dict:
+    def as_dict(self, played: bool = True) -> dict:
         return dict(
             my_points=self.my_points,
             other_points=self.other_points,
@@ -34,9 +34,10 @@ class PublicState:
             remaining_deck_cards=self.remaining_deck_cards,
             hand=pad_card_vector([c.vector() for c in self.hand], 3),
             table=pad_card_vector([c.vector() for c in self.table], 2),
-            my_taken=pad_card_vector([c.vector() for c in self.my_taken], 40),
-            other_taken=pad_card_vector([c.vector() for c in self.other_taken], 40),
             turn=self.turn,
             briscola=self.briscola.vector(),
             order=self.order
-        )
+        ) | (dict(
+            my_played=pad_card_vector([c.vector() for c in self.my_played], 40),
+            other_played=pad_card_vector([c.vector() for c in self.other_played], 40),
+        ) if played else {})

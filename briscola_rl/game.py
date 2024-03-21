@@ -17,7 +17,7 @@ from briscola_rl.players.human_player import HumanPlayer
 class BriscolaCustomEnemyPlayer(gym.Env):
     metadata = {'render_modes': []}
 
-    def __init__(self, other_player: BasePlayer):
+    def __init__(self, other_player: BasePlayer, played: bool = True):
         # Define the action space
         self.action_space = spaces.Discrete(3)  # drop i-th card
         # Define the observation space
@@ -31,13 +31,15 @@ class BriscolaCustomEnemyPlayer(gym.Env):
             'remaining_deck_cards': spaces.Discrete(41),
             'hand': spaces.Tuple([card_space, card_space, card_space]),
             'table': spaces.Tuple([card_space, card_space]),
-            'my_taken': spaces.Tuple([card_space] * 40),
-            'other_taken': spaces.Tuple([card_space] * 40),
             'turn': spaces.Discrete(40),
             'briscola': card_space,
             'order': spaces.Discrete(2)
-        })
+        } | ({
+            'my_played': spaces.Tuple([card_space] * 40),
+            'other_played': spaces.Tuple([card_space] * 40),
+        } if played else {}))
         self.observation_space = spaces.flatten_space(self.observation_space_nested)
+        self.played = played
 
         self.my_player: BasePlayer = HumanPlayer()
         self.other_player = other_player
@@ -55,8 +57,8 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.my_player.reset_player()
         self.other_player.reset_player()
         self.deck = Deck(seed=seed)
-        self._my_taken = []
-        self._other_taken = []
+        self._my_played = []
+        self._other_played = []
         self._table = []
         self._my_points = 0
         self._other_points = 0
@@ -86,7 +88,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.__logger.info(f'Starts {self.players[self._turn_my_player].name}')
 
     def _get_obs(self):
-        return spaces.flatten(self.observation_space_nested, self.public_state().as_dict())
+        return spaces.flatten(self.observation_space_nested, self.public_state().as_dict(played=self.played))
 
     def _get_info(self):
         return dict()
@@ -122,8 +124,8 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.__logger.info(f'Turn Winner is {self.players[i_winner].name}')
         reward = gained_points = sum(values_points[c.value] for c in self._table)
         self._points[i_winner] += gained_points
-        self._my_taken.append(self._table[self._turn_my_player])
-        self._other_taken.append(self._table[1 - self._turn_my_player])
+        self._my_played.append(self._table[self._turn_my_player])
+        self._other_played.append(self._table[1 - self._turn_my_player])
         gained_points_my_player = gained_points_other_player = gained_points
         if i_winner == 0:
             self._my_points += gained_points
@@ -158,7 +160,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
     def public_state(self):
         return PublicState(self._my_points, self._other_points, self.my_player.hand,
                            len(self.other_player.hand), len(self.deck.cards),
-                           self._table, self._my_taken, self._other_taken,
+                           self._table, self._my_played, self._other_played,
                            self._turn, self.briscola, self._turn_my_player)
 
     def is_terminated(self):
@@ -171,11 +173,11 @@ class BriscolaCustomEnemyPlayer(gym.Env):
 
 class BriscolaRandomPlayer(BriscolaCustomEnemyPlayer):
 
-    def __init__(self):
-        super(BriscolaRandomPlayer, self).__init__(PseudoRandomPlayer())
+    def __init__(self, played: bool = True):
+        super(BriscolaRandomPlayer, self).__init__(PseudoRandomPlayer(), played=played)
 
 
 class BriscolaEpsGreedyPlayer(BriscolaCustomEnemyPlayer):
 
-    def __init__(self, eps: float = 0.2):
-        super().__init__(EpsGreedyPlayer(eps, 1))
+    def __init__(self, eps: float = 0.2, played: bool = True):
+        super(BriscolaEpsGreedyPlayer, self).__init__(EpsGreedyPlayer(eps, 1), played=played)
