@@ -1,6 +1,8 @@
+import numpy as np
 from stable_baselines3 import PPO, DQN, A2C
 
 import wandb
+from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 from wandb.integration.sb3 import WandbCallback
@@ -27,6 +29,21 @@ run = wandb.init(
 )
 
 
+class WinRateCallback(BaseCallback):
+    """
+    Custom callback for plotting additional values in tensorboard.
+    """
+
+    def __init__(self, verbose=0):
+        super(WinRateCallback, self).__init__(verbose)
+
+    def _on_step(self) -> bool:
+        # Log scalar value (here a random variable)
+        value = np.random.random()
+        self.logger.record('win_rate', value)
+        return True
+
+
 def make_env():
     if config["opponent"] == "RandomPlayer":
         env = BriscolaRandomPlayer(played=config['played'], big_reward=config['big_reward'])
@@ -43,12 +60,12 @@ if __name__ == '__main__':
                 exploration_fraction=config['exploration_fraction'], learning_rate=config['learning_rate'])
     model.learn(
         total_timesteps=config['total_timesteps'],
-        callback=WandbCallback(
+        callback=[WandbCallback(
             gradient_save_freq=100,
             model_save_path=f'models/{run.id}',
             model_save_freq=1000,
             verbose=2
-        )
+        ), WinRateCallback()]
     )
     run.finish()
 
