@@ -1,4 +1,3 @@
-import numpy as np
 from stable_baselines3 import PPO, DQN, A2C
 
 import wandb
@@ -84,7 +83,8 @@ def make_env():
 if __name__ == '__main__':
     env = make_env()
     model = DQN(config['policy_type'], env, verbose=True, tensorboard_log=f"runs/{run.id}",
-                exploration_fraction=config['exploration_fraction'], learning_rate=config['learning_rate'], train_freq=(4, 'episode'))
+                exploration_fraction=config['exploration_fraction'], learning_rate=config['learning_rate'],
+                train_freq=(4, 'episode'))
     model.learn(
         total_timesteps=config['total_timesteps'],
         callback=[WandbCallback(

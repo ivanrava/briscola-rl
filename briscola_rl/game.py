@@ -12,12 +12,13 @@ import gymnasium as gym
 
 from briscola_rl.players.random_player import PseudoRandomPlayer
 from briscola_rl.players.human_player import HumanPlayer
+from players.interactive_player import InteractivePlayer
 
 
 class BriscolaCustomEnemyPlayer(gym.Env):
     metadata = {'render_modes': []}
 
-    def __init__(self, other_player: BasePlayer, played: bool = True, big_reward: bool = False):
+    def __init__(self, other_player: BasePlayer, played: bool = True, big_reward: bool = False, print_agent_actions: bool = False):
         # Define the action space
         self.action_space = spaces.Discrete(3)  # drop i-th card
         # Define the observation space
@@ -41,6 +42,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.observation_space = spaces.flatten_space(self.observation_space_nested)
         self.played = played
 
+        self.print_agent_actions = print_agent_actions
         self.big_reward = big_reward
 
         self.my_player: BasePlayer = HumanPlayer()
@@ -50,7 +52,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.deck = None
         self.briscola: Card = None
         self.__logger = logging.getLogger('Briscola')
-        self.turn_my_player = 0  # I start
+        self._turn_my_player = 0  # I start
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -85,8 +87,13 @@ class BriscolaCustomEnemyPlayer(gym.Env):
     def _log_hands(self):
         self.__logger.info(f'Player hand is: {self.my_player.hand}')
         self.__logger.info(f'Enemy hand is: {self.other_player.hand}')
+        if self.print_agent_actions:
+            print(f'Agent hand: {self.my_player.hand}')
+            print(f'Your hand: {self.other_player.hand}')
 
     def _log_turn_leader(self):
+        if self.print_agent_actions:
+            print('\nThe opponent starts' if self._turn_my_player == 0 else '\nYou start')
         self.__logger.info(f'Starts {self.players[self._turn_my_player].name}')
 
     def _get_obs(self):
@@ -102,6 +109,8 @@ class BriscolaCustomEnemyPlayer(gym.Env):
             action = action - 1
         my_card = self.my_player.hand.pop(action)
         self.__logger.info(f"Agent plays {my_card}")
+        if self.print_agent_actions:
+            print(f'Agent plays {my_card}')
         self._table.append(my_card)
         if self._turn_my_player == 0:
             other_card = self.other_player.play_card(self.public_state())
@@ -124,6 +133,8 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         """
         i_winner = 0 if self._turn_my_player == i_winner else 1
         self.__logger.info(f'Turn Winner is {self.players[i_winner].name}')
+        if self.print_agent_actions:
+            print(f'Turn winner is {self.players[i_winner].name}')
         reward = gained_points = sum(values_points[c.value] for c in self._table)
         self._points[i_winner] += gained_points
         self._my_played.append(self._table[self._turn_my_player])
@@ -143,6 +154,8 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self._table = []
         self.__logger.info(f'Winner gained {gained_points} points')
         self.__logger.info(f'Current game points: {self._points}')
+        if self.print_agent_actions:
+            print(f'Current points: {self._points}')
 
         big_reward = 0
         if self.big_reward:
@@ -202,3 +215,8 @@ class BriscolaEpsGreedyPlayer(BriscolaCustomEnemyPlayer):
 
     def __init__(self, eps: float = 0.2, played: bool = True, big_reward: bool = False):
         super(BriscolaEpsGreedyPlayer, self).__init__(EpsGreedyPlayer(eps, 1), played=played, big_reward=big_reward)
+
+class BriscolaInteractivePlayer(BriscolaCustomEnemyPlayer):
+
+    def __init__(self):
+        super().__init__(InteractivePlayer(), played=False, print_agent_actions=True)
