@@ -176,6 +176,18 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         return any(p > 60 for p in self._points) or \
             (self.deck.is_empty() and all(len(p.hand) == 0 for p in self.players))
 
+    def has_won(self) -> bool:
+        return self._points[0] > 60
+
+    def has_drawn(self) -> bool:
+        return self._points[0] == 60 and self._points[1] == 60
+
+    def has_lost(self) -> bool:
+        return self._points[1] > 60
+
+    def get_points(self):
+        return self._points
+
     def render(self, mode="human"):
         pass
 
