@@ -60,7 +60,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self._turn = 0
         self.my_player.reset_player()
         self.other_player.reset_player()
-        self.deck = Deck(seed=seed)
+        self.deck = Deck(seed=self.np_random.random())
         self._my_played = []
         self._other_played = []
         self._table = []
