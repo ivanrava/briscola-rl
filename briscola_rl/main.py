@@ -8,18 +8,18 @@ from wandb.integration.sb3 import WandbCallback
 
 from gymnasium import spaces
 
-from briscola_rl.evaluate import test_match
 from briscola_rl.game import BriscolaRandomPlayer, BriscolaEpsGreedyPlayer
 
 config = {
     "policy_type": "MlpPolicy",
-    "total_timesteps": 2_500_000,
+    "total_timesteps": 5_000_000,
     "opponent": "EpsGreedyPlayer",
     "eps": 0.03,
-    "exploration_fraction": 0.8,
-    "learning_rate": 0.03,
+    "exploration_fraction": 0.99,
+    "learning_rate": 0.001,
     "played": False,
-    "big_reward": False
+    "big_reward": False,
+    'penalize_suboptimal_actions': False
 }
 run = wandb.init(
     project="briscola-rl",
@@ -72,9 +72,9 @@ class WinRateCallback(BaseCallback):
 
 def make_env():
     if config["opponent"] == "RandomPlayer":
-        env = BriscolaRandomPlayer(played=config['played'], big_reward=config['big_reward'])
+        env = BriscolaRandomPlayer(played=config['played'], big_reward=config['big_reward'], penalize_suboptimal_actions=config['penalize_suboptimal_actions'])
     else:
-        env = BriscolaEpsGreedyPlayer(eps=config['eps'], played=config['played'], big_reward=config['big_reward'])
+        env = BriscolaEpsGreedyPlayer(eps=config['eps'], played=config['played'], big_reward=config['big_reward'], penalize_suboptimal_actions=config['penalize_suboptimal_actions'])
     env = Monitor(env)
     env = DummyVecEnv([lambda: env])
     return env

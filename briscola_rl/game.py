@@ -18,7 +18,7 @@ from players.interactive_player import InteractivePlayer
 class BriscolaCustomEnemyPlayer(gym.Env):
     metadata = {'render_modes': []}
 
-    def __init__(self, other_player: BasePlayer, played: bool = True, big_reward: bool = False, print_agent_actions: bool = False):
+    def __init__(self, other_player: BasePlayer, played: bool = True, big_reward: bool = False, print_agent_actions: bool = False, penalize_suboptimal_actions: bool = False):
         # Define the action space
         self.action_space = spaces.Discrete(3)  # drop i-th card
         # Define the observation space
@@ -44,6 +44,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
 
         self.print_agent_actions = print_agent_actions
         self.big_reward = big_reward
+        self.penalize_suboptimal_actions = penalize_suboptimal_actions
 
         self.my_player: BasePlayer = HumanPlayer()
         self.other_player = other_player
@@ -163,7 +164,18 @@ class BriscolaCustomEnemyPlayer(gym.Env):
                 big_reward = 100
             elif self._points[1] > 60:
                 big_reward = -100
-        return reward + big_reward
+
+        penalty = -1000 if self.penalize_suboptimal_actions else 0
+        if self.penalize_suboptimal_actions and self._turn_my_player == 1:
+            for card in self.my_player.hand:
+                possible_table = [self._table[0], card]
+                winner = select_winner(possible_table, self.briscola)
+                coef_pts = 1 if winner else -1
+                gain = coef_pts * sum(map(lambda c: c.points, possible_table))
+                if gain > reward and gain > penalty and card.suit != self.briscola.suit:
+                    penalty = gain
+
+        return reward + big_reward - abs(penalty)
 
     def _draw_phase(self):
         if not self.deck.is_empty():
@@ -207,14 +219,14 @@ class BriscolaCustomEnemyPlayer(gym.Env):
 
 class BriscolaRandomPlayer(BriscolaCustomEnemyPlayer):
 
-    def __init__(self, played: bool = True, big_reward: bool = False):
-        super(BriscolaRandomPlayer, self).__init__(PseudoRandomPlayer(), played=played, big_reward=big_reward)
+    def __init__(self, played: bool = True, big_reward: bool = False, penalize_suboptimal_actions: bool = False):
+        super(BriscolaRandomPlayer, self).__init__(PseudoRandomPlayer(), played=played, big_reward=big_reward, penalize_suboptimal_actions=penalize_suboptimal_actions)
 
 
 class BriscolaEpsGreedyPlayer(BriscolaCustomEnemyPlayer):
 
-    def __init__(self, eps: float = 0.2, played: bool = True, big_reward: bool = False):
-        super(BriscolaEpsGreedyPlayer, self).__init__(EpsGreedyPlayer(eps, 1), played=played, big_reward=big_reward)
+    def __init__(self, eps: float = 0.2, played: bool = True, big_reward: bool = False, penalize_suboptimal_actions: bool = False):
+        super(BriscolaEpsGreedyPlayer, self).__init__(EpsGreedyPlayer(eps, 1), played=played, big_reward=big_reward, penalize_suboptimal_actions=penalize_suboptimal_actions)
 
 class BriscolaInteractivePlayer(BriscolaCustomEnemyPlayer):
 
