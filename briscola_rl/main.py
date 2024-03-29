@@ -19,6 +19,7 @@ config = {
     "learning_rate": 0.001,
     "played": False,
     "sparse_reward": False,
+    "dense_reward": True,
     'penalize_suboptimal_actions': False
 }
 run = wandb.init(
@@ -75,12 +76,14 @@ def make_env():
         env = BriscolaRandomPlayer(
             played=config['played'],
             sparse_reward=config['sparse_reward'],
+            dense_reward=config['dense_reward'],
             penalize_suboptimal_actions=config['penalize_suboptimal_actions'])
     else:
         env = BriscolaEpsGreedyPlayer(
             eps=config['eps'],
             played=config['played'],
             sparse_reward=config['sparse_reward'],
+            dense_reward=config['dense_reward'],
             penalize_suboptimal_actions=config['penalize_suboptimal_actions'])
     env = Monitor(env)
     env = DummyVecEnv([lambda: env])

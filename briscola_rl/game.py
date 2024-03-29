@@ -18,7 +18,13 @@ from players.interactive_player import InteractivePlayer
 class BriscolaCustomEnemyPlayer(gym.Env):
     metadata = {'render_modes': []}
 
-    def __init__(self, other_player: BasePlayer, played: bool = True, sparse_reward: bool = False, print_agent_actions: bool = False, penalize_suboptimal_actions: bool = False):
+    def __init__(self,
+                 other_player: BasePlayer,
+                 played: bool = True,
+                 sparse_reward: bool = False,
+                 dense_reward: bool = True,
+                 print_agent_actions: bool = False,
+                 penalize_suboptimal_actions: bool = False):
         # Define the action space
         self.action_space = spaces.Discrete(3)  # drop i-th card
         # Define the observation space
@@ -44,6 +50,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
 
         self.print_agent_actions = print_agent_actions
         self.sparse_reward = sparse_reward
+        self.dense_reward = dense_reward
         self.penalize_suboptimal_actions = penalize_suboptimal_actions
 
         self.my_player: BasePlayer = HumanPlayer()
@@ -153,7 +160,34 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.my_player.notify_turn_winner(gained_points_my_player)
         self.other_player.notify_turn_winner(gained_points_other_player)
 
-        penalty = -1000 if self.penalize_suboptimal_actions else 0
+        penalty = self.get_penalty(reward)
+
+        self._table = []
+        self.__logger.info(f'Winner gained {gained_points} points')
+        self.__logger.info(f'Current game points: {self._points}')
+        if self.print_agent_actions:
+            print(f'Current points: {self._points}')
+
+        sparse_reward = self.get_sparse_reward()
+
+        return (reward if self.dense_reward else 0) - penalty + sparse_reward
+
+    def get_sparse_reward(self):
+        if not self.sparse_reward:
+            return 0
+
+        sparse_reward = 0
+        if self._points[0] > 60:
+            sparse_reward = 30
+        elif self._points[1] > 60:
+            sparse_reward = -30
+        return sparse_reward
+
+    def get_penalty(self, reward):
+        if not self.penalize_suboptimal_actions:
+            return 0
+
+        penalty = -1000
         if self.penalize_suboptimal_actions and self._turn_my_player == 1:
             for card in self.my_player.hand:
                 possible_table = [self._table[0], card]
@@ -162,26 +196,11 @@ class BriscolaCustomEnemyPlayer(gym.Env):
                 gain = coef_pts * sum(map(lambda c: c.points, possible_table))
                 if gain > reward and gain > penalty and card.suit != self.briscola.suit:
                     penalty = gain
-
         if penalty == -1000:
             penalty = 0
         elif penalty < 0:
             penalty = abs(reward - penalty)
-
-        self._table = []
-        self.__logger.info(f'Winner gained {gained_points} points')
-        self.__logger.info(f'Current game points: {self._points}')
-        if self.print_agent_actions:
-            print(f'Current points: {self._points}')
-
-        big_reward = 0
-        if self.sparse_reward:
-            if self._points[0] > 60:
-                big_reward = 30
-            elif self._points[1] > 60:
-                big_reward = -30
-
-        return reward - penalty if not self.sparse_reward else big_reward
+        return penalty
 
     def _draw_phase(self):
         if not self.deck.is_empty():
@@ -225,19 +244,21 @@ class BriscolaCustomEnemyPlayer(gym.Env):
 
 class BriscolaRandomPlayer(BriscolaCustomEnemyPlayer):
 
-    def __init__(self, played: bool = True, sparse_reward: bool = False, penalize_suboptimal_actions: bool = False):
+    def __init__(self, played: bool = True, sparse_reward: bool = False, dense_reward: bool = True, penalize_suboptimal_actions: bool = False):
         super(BriscolaRandomPlayer, self).__init__(PseudoRandomPlayer(),
                                                    played=played,
                                                    sparse_reward=sparse_reward,
+                                                   dense_reward=dense_reward,
                                                    penalize_suboptimal_actions=penalize_suboptimal_actions)
 
 
 class BriscolaEpsGreedyPlayer(BriscolaCustomEnemyPlayer):
 
-    def __init__(self, eps: float = 0.2, played: bool = True, sparse_reward: bool = False, penalize_suboptimal_actions: bool = False):
+    def __init__(self, eps: float = 0.2, played: bool = True, sparse_reward: bool = False, dense_reward: bool = True, penalize_suboptimal_actions: bool = False):
         super(BriscolaEpsGreedyPlayer, self).__init__(EpsGreedyPlayer(eps, 1),
                                                       played=played,
                                                       sparse_reward=sparse_reward,
+                                                      dense_reward=dense_reward,
                                                       penalize_suboptimal_actions=penalize_suboptimal_actions)
 
 class BriscolaInteractivePlayer(BriscolaCustomEnemyPlayer):
