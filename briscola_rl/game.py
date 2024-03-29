@@ -152,6 +152,17 @@ class BriscolaCustomEnemyPlayer(gym.Env):
             reward = reward * -1
         self.my_player.notify_turn_winner(gained_points_my_player)
         self.other_player.notify_turn_winner(gained_points_other_player)
+
+        penalty = -1000 if self.penalize_suboptimal_actions else 0
+        if self.penalize_suboptimal_actions and self._turn_my_player == 1:
+            for card in self.my_player.hand:
+                possible_table = [self._table[0], card]
+                winner = select_winner(possible_table, self.briscola)
+                coef_pts = 1 if winner else -1
+                gain = coef_pts * sum(map(lambda c: c.points, possible_table))
+                if gain > reward and gain > penalty and card.suit != self.briscola.suit:
+                    penalty = gain
+
         self._table = []
         self.__logger.info(f'Winner gained {gained_points} points')
         self.__logger.info(f'Current game points: {self._points}')
@@ -164,16 +175,6 @@ class BriscolaCustomEnemyPlayer(gym.Env):
                 big_reward = 100
             elif self._points[1] > 60:
                 big_reward = -100
-
-        penalty = -1000 if self.penalize_suboptimal_actions else 0
-        if self.penalize_suboptimal_actions and self._turn_my_player == 1:
-            for card in self.my_player.hand:
-                possible_table = [self._table[0], card]
-                winner = select_winner(possible_table, self.briscola)
-                coef_pts = 1 if winner else -1
-                gain = coef_pts * sum(map(lambda c: c.points, possible_table))
-                if gain > reward and gain > penalty and card.suit != self.briscola.suit:
-                    penalty = gain
 
         return reward + big_reward - abs(penalty)
 
