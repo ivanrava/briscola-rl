@@ -165,6 +165,8 @@ class BriscolaCustomEnemyPlayer(gym.Env):
 
         if penalty == -1000:
             penalty = 0
+        elif penalty < 0:
+            penalty = abs(reward - penalty)
 
         self._table = []
         self.__logger.info(f'Winner gained {gained_points} points')
@@ -179,7 +181,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
             elif self._points[1] > 60:
                 big_reward = -100
 
-        return reward + big_reward - abs(penalty)
+        return reward + big_reward - penalty
 
     def _draw_phase(self):
         if not self.deck.is_empty():
