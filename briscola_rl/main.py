@@ -18,7 +18,7 @@ config = {
     "exploration_fraction": 0.99,
     "learning_rate": 0.001,
     "played": False,
-    "big_reward": False,
+    "sparse_reward": False,
     'penalize_suboptimal_actions': False
 }
 run = wandb.init(
@@ -72,9 +72,16 @@ class WinRateCallback(BaseCallback):
 
 def make_env():
     if config["opponent"] == "RandomPlayer":
-        env = BriscolaRandomPlayer(played=config['played'], big_reward=config['big_reward'], penalize_suboptimal_actions=config['penalize_suboptimal_actions'])
+        env = BriscolaRandomPlayer(
+            played=config['played'],
+            sparse_reward=config['sparse_reward'],
+            penalize_suboptimal_actions=config['penalize_suboptimal_actions'])
     else:
-        env = BriscolaEpsGreedyPlayer(eps=config['eps'], played=config['played'], big_reward=config['big_reward'], penalize_suboptimal_actions=config['penalize_suboptimal_actions'])
+        env = BriscolaEpsGreedyPlayer(
+            eps=config['eps'],
+            played=config['played'],
+            sparse_reward=config['sparse_reward'],
+            penalize_suboptimal_actions=config['penalize_suboptimal_actions'])
     env = Monitor(env)
     env = DummyVecEnv([lambda: env])
     return env
