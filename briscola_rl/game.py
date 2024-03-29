@@ -49,7 +49,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.my_player: BasePlayer = HumanPlayer()
         self.other_player = other_player
         self.players = [self.my_player, self.other_player]
-        self.reward_range = (-22, 22) if not big_reward else (-122, 122)
+        self.reward_range = (-22 + (-100 if big_reward else 0) + (-11 if penalize_suboptimal_actions else 0), 22 + (100 if big_reward else 0))
         self.deck = None
         self.briscola: Card = None
         self.__logger = logging.getLogger('Briscola')
