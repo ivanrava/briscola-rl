@@ -56,7 +56,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.my_player: BasePlayer = HumanPlayer()
         self.other_player = other_player
         self.players = [self.my_player, self.other_player]
-        self.reward_range = (-22  + (-11 if penalize_suboptimal_actions else 0), 22) if not self.sparse_reward else (-30, 30)
+        self.reward_range = (-22  + (-21 if penalize_suboptimal_actions else 0) + (-60 if self.sparse_reward else 0), 22 + (60 if self.sparse_reward else 0))
         self.deck = None
         self.briscola: Card = None
         self.__logger = logging.getLogger('Briscola')
@@ -178,9 +178,9 @@ class BriscolaCustomEnemyPlayer(gym.Env):
 
         sparse_reward = 0
         if self._points[0] > 60:
-            sparse_reward = 30
+            sparse_reward = 60
         elif self._points[1] > 60:
-            sparse_reward = -30
+            sparse_reward = -60
         return sparse_reward
 
     def get_penalty(self, reward):
