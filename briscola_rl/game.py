@@ -163,6 +163,9 @@ class BriscolaCustomEnemyPlayer(gym.Env):
                 if gain > reward and gain > penalty and card.suit != self.briscola.suit:
                     penalty = gain
 
+        if penalty == -1000:
+            penalty = 0
+
         self._table = []
         self.__logger.info(f'Winner gained {gained_points} points')
         self.__logger.info(f'Current game points: {self._points}')
