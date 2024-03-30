@@ -49,7 +49,7 @@ class SelfPlayAgentOpponent(BasePlayer):
     if self.env.best_model is None:
       return randint(0, len(self.hand) - 1) if len(self.hand) > 1 else 0
     else:
-      action, _ = self.env.best_model.predict(self.env._get_obs())
+      action, _ = self.env.best_model.predict(self.env._get_obs(), deterministic=True)
       while action >= len(self.hand):
         action -= 1
       return action
