@@ -4,9 +4,9 @@ values_points = {1: 11, 2: 0, 3: 10, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 
 def select_winner(table: list, briscola) -> int:
     first, second = table
     first_points = values_points[first.value]
-    first_points = first.value if first_points == 0 else first_points
     second_points = values_points[second.value]
-    second_points = second.value if second_points == 0 else second_points
+    first_points = first.value if values_points[first.value] == values_points[second.value] == 0 else first_points
+    second_points = second.value if values_points[first.value] == values_points[second.value] == 0 else second_points
     first_briscola = first.suit == briscola.suit
     second_briscola = second.suit == briscola.suit
     if first_briscola:
