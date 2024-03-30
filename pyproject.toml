@@ -11,6 +11,9 @@ gymnasium = "^0.29.1"
 stable-baselines3 = {extras = ["extra"], version = "^2.2.1"}
 pytest = "^8.1.1"
 wandb = "^0.16.4"
+onnx = "^1.16.0"
+onnxruntime = "^1.17.1"
+seaborn = "^0.13.2"
 
 
 [build-system]
