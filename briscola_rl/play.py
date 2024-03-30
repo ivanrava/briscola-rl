@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     obs, _ = env.reset()
     while True:
-        action, _states = model.predict(obs)
+        action, _states = model.predict(obs, deterministic=True)
         obs, reward, terminated, _, info = env.step(action)
         if terminated:
             break
