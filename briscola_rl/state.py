@@ -11,7 +11,7 @@ def pad_card_vector(lst: list, max_len: int):
     return lst
 
 
-@dataclass(frozen=True)
+@dataclass()
 class PublicState:
     my_points: int
     other_points: int
