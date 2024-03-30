@@ -1,11 +1,12 @@
 from gymnasium import spaces
+from stable_baselines3 import DQN
 
 from players.base_player import BasePlayer
 from state import PublicState
 
 
 class ModelPlayer(BasePlayer):
-    def __init__(self, model, env):
+    def __init__(self, model: DQN, env):
         super().__init__()
         self.model = model
         self.env = env
@@ -20,7 +21,7 @@ class ModelPlayer(BasePlayer):
         state_copy.my_played, state_copy.other_played = state_copy.other_played, state_copy.my_played
 
         obs = spaces.flatten(self.env.observation_space_nested, state.as_dict(played=self.env.played))
-        action, _ = self.model.predict(obs)
+        action, _ = self.model.predict(obs, deterministic=True)
         while action >= len(self.hand):
             action = action - 1
         return action
