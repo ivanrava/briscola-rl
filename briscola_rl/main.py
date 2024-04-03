@@ -8,7 +8,7 @@ from wandb.integration.sb3 import WandbCallback
 
 from gymnasium import spaces
 
-from briscola_rl.game import BriscolaRandomPlayer, BriscolaEpsGreedyPlayer
+from briscola_rl.game import BriscolaRandomPlayer, BriscolaEpsGreedyPlayer, BriscolaRulesPlayer
 
 config = {
     "policy_type": "MlpPolicy",
@@ -74,6 +74,12 @@ class WinRateCallback(BaseCallback):
 def make_env():
     if config["opponent"] == "RandomPlayer":
         env = BriscolaRandomPlayer(
+            played=config['played'],
+            sparse_reward=config['sparse_reward'],
+            dense_reward=config['dense_reward'],
+            penalize_suboptimal_actions=config['penalize_suboptimal_actions'])
+    elif config['opponent'] == 'RulesPlayer':
+        env = BriscolaRulesPlayer(
             played=config['played'],
             sparse_reward=config['sparse_reward'],
             dense_reward=config['dense_reward'],

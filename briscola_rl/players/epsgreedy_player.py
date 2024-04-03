@@ -62,7 +62,8 @@ class EpsGreedyPlayer(BasePlayer):
                 if c.points < min_pts:
                     i_min = i
                     min_pts = c.points
-                else:
+            else:
+                if c.points < min_pts_b:
                     i_min_b = i
                     min_pts_b = c.points
 

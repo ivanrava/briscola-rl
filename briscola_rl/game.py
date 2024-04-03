@@ -13,6 +13,7 @@ import gymnasium as gym
 from briscola_rl.players.random_player import PseudoRandomPlayer
 from briscola_rl.players.human_player import HumanPlayer
 from players.interactive_player import InteractivePlayer
+from players.rules_player import RulesPlayer
 
 
 class BriscolaCustomEnemyPlayer(gym.Env):
@@ -265,3 +266,12 @@ class BriscolaInteractivePlayer(BriscolaCustomEnemyPlayer):
 
     def __init__(self):
         super().__init__(InteractivePlayer(), played=False, print_agent_actions=True)
+
+class BriscolaRulesPlayer(BriscolaCustomEnemyPlayer):
+
+    def __init__(self, played: bool = True, sparse_reward: bool = False, dense_reward: bool = True, penalize_suboptimal_actions: bool = False):
+        super(BriscolaRulesPlayer, self).__init__(RulesPlayer(1),
+                                                      played=played,
+                                                      sparse_reward=sparse_reward,
+                                                      dense_reward=dense_reward,
+                                                      penalize_suboptimal_actions=penalize_suboptimal_actions)
