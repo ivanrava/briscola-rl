@@ -8,7 +8,7 @@ from stable_baselines3.common.monitor import Monitor
 
 from tqdm import tqdm
 
-from game import BriscolaEpsGreedyPlayer
+from game import BriscolaEpsGreedyPlayer, BriscolaRulesPlayer
 from players.model_player import ModelPlayer
 
 
@@ -50,19 +50,24 @@ def rizzo_round(env, model, logger: logging.Logger) -> float:
             return total_reward
 
 
-def evaluate_checkpoints(n_eval_episodes=10_000, seed=1337):
+def evaluate_checkpoints(n_eval_episodes=10_000, seed=1337, strategy='rules'):
     checkpoints_folder = '../checkpoints'
-    print(f'Results averaged over {n_eval_episodes} episodes:')
+    print(f"Results averaged over {n_eval_episodes} episodes (strategy '{strategy}'):")
 
     def episode_length(predicate):
         good_lengths = [l for r, l in zip(rewards, lengths) if predicate(r)]
-        return f'Length: {round(np.mean(good_lengths), 3):>6} +/- {round(np.std(good_lengths), 3)}'
+        return f'Length: {round(np.mean(good_lengths) if len(good_lengths) > 0 else 0, 3):>6} +/- {round(np.std(good_lengths) if len(good_lengths) > 0 else 0, 3)}'
 
     for filename in os.listdir(checkpoints_folder):
         filename = filename.rstrip('.zip')
         filepath = os.path.join(checkpoints_folder, filename)
         model = DQN.load(filepath)
-        env = BriscolaEpsGreedyPlayer(played=False, eps=0.03)
+        if strategy == 'rules':
+            env = BriscolaRulesPlayer(played=False)
+        elif strategy == 'greedy':
+            env = BriscolaEpsGreedyPlayer(played=False)
+        else:
+            env = BriscolaEpsGreedyPlayer(played=False)
         env.reset(seed=seed)
         env = Monitor(env)
         rewards, lengths = evaluate_policy(model, env, n_eval_episodes=n_eval_episodes, return_episode_rewards=True)
@@ -105,4 +110,7 @@ def evaluate_full_duel(model1, model2):
 
 
 if __name__ == '__main__':
-    evaluate_checkpoints()
+    n_eval_episodes = 10_000
+    evaluate_checkpoints(n_eval_episodes=n_eval_episodes, strategy='rules')
+    evaluate_checkpoints(n_eval_episodes=n_eval_episodes, strategy='greedy')
+    evaluate_checkpoints(n_eval_episodes=n_eval_episodes, strategy='random')
