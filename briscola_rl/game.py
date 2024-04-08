@@ -189,7 +189,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
             return 0
 
         penalty = -1000
-        if self.penalize_suboptimal_actions and self._turn_my_player == 1:
+        if self._turn_my_player == 1:
             for card in self.my_player.hand:
                 possible_table = [self._table[0], card]
                 winner = select_winner(possible_table, self.briscola)
