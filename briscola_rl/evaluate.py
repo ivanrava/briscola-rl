@@ -11,6 +11,8 @@ from tqdm import tqdm
 from game import BriscolaEpsGreedyPlayer, BriscolaRulesPlayer
 from players.model_player import ModelPlayer
 
+import pandas as pd
+
 
 def rizzo_match(env, model, number_of_rounds: int = 10_000):
     logging.basicConfig(filename='test_match.log', level=logging.INFO)
@@ -54,6 +56,8 @@ def evaluate_checkpoints(n_eval_episodes=10_000, seed=1337, strategy='rules'):
     checkpoints_folder = '../checkpoints'
     print(f"Results averaged over {n_eval_episodes} episodes (strategy '{strategy}'):")
 
+    dics = []
+
     def episode_length(predicate):
         good_lengths = [l for r, l in zip(rewards, lengths) if predicate(r)]
         return f'Length: {round(np.mean(good_lengths) if len(good_lengths) > 0 else 0, 3):>6} +/- {round(np.std(good_lengths) if len(good_lengths) > 0 else 0, 3)}'
@@ -62,12 +66,14 @@ def evaluate_checkpoints(n_eval_episodes=10_000, seed=1337, strategy='rules'):
         filename = filename.rstrip('.zip')
         filepath = os.path.join(checkpoints_folder, filename)
         model = DQN.load(filepath)
+        in_features = model.policy.q_net.q_net[0].in_features
+        played = in_features == 2999
         if strategy == 'rules':
-            env = BriscolaRulesPlayer(played=False)
+            env = BriscolaRulesPlayer(played=played)
         elif strategy == 'greedy':
-            env = BriscolaEpsGreedyPlayer(played=False)
+            env = BriscolaEpsGreedyPlayer(played=played)
         else:
-            env = BriscolaEpsGreedyPlayer(played=False)
+            env = BriscolaEpsGreedyPlayer(played=played)
         env.reset(seed=seed)
         env = Monitor(env)
         rewards, lengths = evaluate_policy(model, env, n_eval_episodes=n_eval_episodes, return_episode_rewards=True)
@@ -76,7 +82,25 @@ def evaluate_checkpoints(n_eval_episodes=10_000, seed=1337, strategy='rules'):
         print(f'{"Draws":>20}: {len([r for r in rewards if r == 0])/len(rewards):<6} \t {episode_length(lambda r: r == 0)}')
         print(f'{"Losses":>20}: {len([r for r in rewards if r < 0])/len(rewards):<6} \t {episode_length(lambda r: r < 0)}')
         print()
+        dics.append({
+            'model': filename,
+            'rew_mean': np.mean(rewards),
+            'rew_std': np.std(rewards),
+            'wins_rate': len([r for r in rewards if r > 0])/len(rewards),
+            'wins_len_mean': round(np.mean([l for r, l in zip(rewards, lengths) if r > 0]) if len([l for r, l in zip(rewards, lengths) if r > 0]) > 0 else 0, 3),
+            'wins_len_std': round(np.std([l for r, l in zip(rewards, lengths) if r > 0]) if len([l for r, l in zip(rewards, lengths) if r > 0]) > 0 else 0, 3),
+            'draws_rate': len([r for r in rewards if r == 0])/len(rewards),
+            'draws_len_mean': round(np.mean([l for r, l in zip(rewards, lengths) if r == 0]) if len([l for r, l in zip(rewards, lengths) if r == 0]) > 0 else 0, 3),
+            'draws_len_std': round(np.std([l for r, l in zip(rewards, lengths) if r == 0]) if len([l for r, l in zip(rewards, lengths) if r == 0]) > 0 else 0, 3),
+            'losses_rate': len([r for r in rewards if r < 0])/len(rewards),
+            'losses_len_mean': round(np.mean([l for r, l in zip(rewards, lengths) if r < 0]) if len([l for r, l in zip(rewards, lengths) if r < 0]) > 0 else 0, 3),
+            'losses_len_std': round(np.std([l for r, l in zip(rewards, lengths) if r < 0]) if len([l for r, l in zip(rewards, lengths) if r < 0]) > 0 else 0, 3),
+            'strategy': strategy,
+            'seed': seed,
+            'n_eval_episodes': n_eval_episodes
+        })
 
+    return pd.DataFrame(dics)
 
 def evaluate_duel(champion, challenger, n_eval_episodes=10_000, seed=1337):
     checkpoints_folder = '../checkpoints'
@@ -111,6 +135,6 @@ def evaluate_full_duel(model1, model2):
 
 if __name__ == '__main__':
     n_eval_episodes = 10_000
-    evaluate_checkpoints(n_eval_episodes=n_eval_episodes, strategy='rules')
-    evaluate_checkpoints(n_eval_episodes=n_eval_episodes, strategy='greedy')
-    evaluate_checkpoints(n_eval_episodes=n_eval_episodes, strategy='random')
+    evaluate_checkpoints(n_eval_episodes=n_eval_episodes, strategy='rules').to_csv('../data/rules_best.csv', index=False)
+    evaluate_checkpoints(n_eval_episodes=n_eval_episodes, strategy='greedy').to_csv('../data/greedy_best.csv', index=False)
+    evaluate_checkpoints(n_eval_episodes=n_eval_episodes, strategy='random').to_csv('../data/random_best.csv', index=False)
