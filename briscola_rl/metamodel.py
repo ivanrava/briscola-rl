@@ -34,9 +34,14 @@ class MetaModel(PolicyPredictor):
                 episode_start: Optional[np.ndarray] = None,
                 deterministic: bool = True,
                 ):
+        obs_played = observation
+        obs_not_played = np.array([observation.squeeze()[:-(31*80)]])
         actions = [0,0,0]
         for m in self.models_not_played:
-            action, _ = m.predict(observation=observation, state=state, episode_start=episode_start, deterministic=True)
+            action, _ = m.predict(observation=obs_not_played, state=state, episode_start=episode_start, deterministic=True)
+            actions[action[0]] += 1
+        for m in self.models_played:
+            action, _ = m.predict(observation=obs_played, state=state, episode_start=episode_start, deterministic=True)
             actions[action[0]] += 1
         return [np.argmax(actions)], None
 
@@ -46,7 +51,7 @@ if __name__ == '__main__':
         return f'Length: {round(np.mean(good_lengths) if len(good_lengths) > 0 else 0, 3):>6} +/- {round(np.std(good_lengths) if len(good_lengths) > 0 else 0, 3)}'
 
     model = MetaModel()
-    env = BriscolaRulesPlayer(played=False)
+    env = BriscolaRulesPlayer(played=True)
     env.reset(seed=1337)
     env = Monitor(env)
     rewards, lengths = evaluate_policy(model, env, n_eval_episodes=10_000, return_episode_rewards=True)
