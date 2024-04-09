@@ -10,11 +10,17 @@ from stable_baselines3.common.type_aliases import PolicyPredictor
 from game import BriscolaRulesPlayer
 
 
+def q_values(m, obs):
+    t, _ = m.policy.obs_to_tensor(obs)
+    return m.q_net(t).detach().numpy().squeeze()
+
+
 class MetaModel(PolicyPredictor):
     CHECKPOINTS_FOLDER = '../checkpoints'
 
-    def __init__(self):
+    def __init__(self, voting_strategy='voting'):
         self.models_played, self.models_not_played = self._hydrate_models()
+        self.voting_strategy = voting_strategy
 
     def _hydrate_models(self):
         models_played = []
@@ -22,10 +28,10 @@ class MetaModel(PolicyPredictor):
         for filename in os.listdir(self.CHECKPOINTS_FOLDER):
             filename = filename.rstrip('.zip')
             filepath = os.path.join(self.CHECKPOINTS_FOLDER, filename)
-            model = DQN.load(filepath)
-            in_features = model.policy.q_net.q_net[0].in_features
+            m = DQN.load(filepath)
+            in_features = m.policy.q_net.q_net[0].in_features
             played = in_features == 2999
-            models_played.append(model) if played else models_not_played.append(model)
+            models_played.append(m) if played else models_not_played.append(m)
         return models_played, models_not_played
 
     def predict(self,
@@ -34,6 +40,21 @@ class MetaModel(PolicyPredictor):
                 episode_start: Optional[np.ndarray] = None,
                 deterministic: bool = True,
                 ):
+        if self.voting_strategy == 'voting':
+            return self._predict_voting(observation, state, episode_start, deterministic)
+        elif self.voting_strategy == 'q_raw':
+            return self._predict_q_voting(observation)
+        elif self.voting_strategy == 'q_normal':
+            return self._predict_q_voting(observation, normalize=True)
+        else:
+            raise NotImplementedError(f"Voting strategy {self.voting_strategy} unknown")
+
+    def _predict_voting(self,
+                        observation: Union[np.ndarray, Dict[str, np.ndarray]],
+                        state: Optional[Tuple[np.ndarray, ...]] = None,
+                        episode_start: Optional[np.ndarray] = None,
+                        deterministic: bool = True,
+                        ):
         obs_played = observation
         obs_not_played = np.array([observation.squeeze()[:-(31*80)]])
         actions = [0,0,0]
@@ -43,6 +64,24 @@ class MetaModel(PolicyPredictor):
         for m in self.models_played:
             action, _ = m.predict(observation=obs_played, state=state, episode_start=episode_start, deterministic=True)
             actions[action[0]] += 1
+        return [np.argmax(actions)], None
+
+    def _predict_q_voting(self,
+                        observation: Union[np.ndarray, Dict[str, np.ndarray]],
+                        state: Optional[Tuple[np.ndarray, ...]] = None,
+                        episode_start: Optional[np.ndarray] = None,
+                        deterministic: bool = True,
+                        normalize: bool = False
+                        ):
+        obs_played = observation
+        obs_not_played = np.array([observation.squeeze()[:-(31*80)]])
+        actions = [0,0,0]
+        for m in self.models_not_played:
+            q_vals = q_values(m, obs_not_played)
+            actions += (q_vals-np.min(q_vals))/(np.max(q_vals)-np.min(q_vals)) if normalize else q_vals
+        for m in self.models_played:
+            q_vals = q_values(m, obs_played)
+            actions += (q_vals-np.min(q_vals))/(np.max(q_vals)-np.min(q_vals)) if normalize else q_vals
         return [np.argmax(actions)], None
 
 if __name__ == '__main__':
