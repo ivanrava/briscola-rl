@@ -8,7 +8,7 @@ from stable_baselines3.common.monitor import Monitor
 
 from tqdm import tqdm
 
-from game import BriscolaEpsGreedyPlayer, BriscolaRulesPlayer
+from game import BriscolaEpsGreedyPlayer, BriscolaRulesPlayer, BriscolaRandomPlayer
 from players.model_player import ModelPlayer
 
 import pandas as pd
@@ -73,7 +73,7 @@ def evaluate_checkpoints(n_eval_episodes=10_000, seed=1337, strategy='rules'):
         elif strategy == 'greedy':
             env = BriscolaEpsGreedyPlayer(played=played)
         else:
-            env = BriscolaEpsGreedyPlayer(played=played)
+            env = BriscolaRandomPlayer(played=played)
         env.reset(seed=seed)
         env = Monitor(env)
         rewards, lengths = evaluate_policy(model, env, n_eval_episodes=n_eval_episodes, return_episode_rewards=True)
