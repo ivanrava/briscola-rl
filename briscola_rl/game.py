@@ -210,7 +210,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         def unnecessary_charge_first_hand():
             # Penalty range [0, 11]
             played_card = self._table[0]
-            if self._turn_my_player == 0 and played_card.points >= 10:
+            if self._turn_my_player == 0 and played_card.points >= 10 and len(self.my_player.hand) > 0:
                 min_points = min([c.points for c in self.my_player.hand])
                 if played_card.points >= 10 and min_points < played_card.points:
                     return played_card.points - min_points
