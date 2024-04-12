@@ -57,7 +57,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.my_player: BasePlayer = HumanPlayer()
         self.other_player = other_player
         self.players = [self.my_player, self.other_player]
-        self.reward_range = (-22  + (-21 if penalize_suboptimal_actions else 0) + (-60 if self.sparse_reward else 0), 22 + (60 if self.sparse_reward else 0))
+        self.reward_range = (-22  + (-36 if penalize_suboptimal_actions else 0) + (-60 if self.sparse_reward else 0), 22 + (60 if self.sparse_reward else 0))
         self.deck = None
         self.briscola: Card = None
         self.__logger = logging.getLogger('Briscola')
@@ -161,7 +161,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
         self.my_player.notify_turn_winner(gained_points_my_player)
         self.other_player.notify_turn_winner(gained_points_other_player)
 
-        penalty = self.get_penalty(reward)
+        penalty = self.get_modular_penalty(reward)
 
         self._table = []
         self.__logger.info(f'Winner gained {gained_points} points')
@@ -201,6 +201,71 @@ class BriscolaCustomEnemyPlayer(gym.Env):
             penalty = 0
         elif penalty < 0:
             penalty = abs(reward - penalty)
+        return penalty
+
+    def get_modular_penalty(self, reward):
+        if not self.penalize_suboptimal_actions:
+            return 0
+
+        def unnecessary_charge_first_hand():
+            # Penalty range [0, 11]
+            played_card = self._table[0]
+            if self._turn_my_player == 0 and played_card.points >= 10:
+                min_points = min([c.points for c in self.my_player.hand])
+                if played_card.points >= 10 and min_points < played_card.points:
+                    return played_card.points - min_points
+            return 0
+
+        def missed_choke():
+            # Penalty range [0, 11]
+            if self._turn_my_player == 1:
+                played_card = self._table[1]
+                good_choke_cards = [c.points for c in self.my_player.hand if
+                                    # No briscola
+                                    c.suit != self.briscola.suit and
+                                    # Same suits
+                                    c.suit == self._table[0].suit and
+                                    # More points
+                                    c.points > played_card.points and
+                                    # Choke
+                                    c.points > self._table[0].points]
+                choke_points = max(good_choke_cards) if len(good_choke_cards) > 0 else 0
+                return choke_points
+            return 0
+
+        def unnecessary_charge_second_hand():
+            # Penalty range [0, 11]
+            played_card = self._table[1]
+            if self._turn_my_player == 1 and played_card.points >= 10 and reward < 0:
+                min_points = [c.points for c in self.my_player.hand]
+                if min_points < played_card.points:
+                    return played_card.points - min_points
+            return 0
+
+        def unnecessary_briscola_second_hand_for_zero_points():
+            # Penalty range [0, 5]
+            played_card = self._table[1]
+            if self._turn_my_player == 1 and played_card.suit == self.briscola.suit:
+                if self._table[0].points == 0 and len([c for c in self.my_player.hand if c.points == 0 and c.suit != self.briscola.suit]) > 0:
+                    return 5
+            return 0
+
+        def unnecessary_high_briscola_second_hand():
+            # Penalty range [0, 11]
+            played_card = self._table[1]
+            briscola_points = [c.points for c in self.my_player.hand if c.suit == self.briscola.suit]
+            if self._turn_my_player == 1 and played_card.suit == self.briscola.suit and len(briscola_points) > 0:
+                if min(briscola_points) < played_card.points:
+                    return played_card.points - min(briscola_points)
+            return 0
+
+        penalty = 0
+        penalty += unnecessary_charge_first_hand()
+        penalty += missed_choke()
+        penalty += unnecessary_charge_second_hand()
+        penalty += unnecessary_briscola_second_hand_for_zero_points()
+        penalty += unnecessary_high_briscola_second_hand()
+
         return penalty
 
     def _draw_phase(self):
