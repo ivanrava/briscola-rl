@@ -237,7 +237,7 @@ class BriscolaCustomEnemyPlayer(gym.Env):
             # Penalty range [0, 11]
             played_card = self._table[1]
             if self._turn_my_player == 1 and played_card.points >= 10 and reward < 0:
-                min_points = [c.points for c in self.my_player.hand]
+                min_points = min([c.points for c in self.my_player.hand])
                 if min_points < played_card.points:
                     return played_card.points - min_points
             return 0
