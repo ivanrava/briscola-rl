@@ -10,6 +10,7 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 
+from cards import Card
 from game import BriscolaEpsGreedyPlayer, BriscolaRulesPlayer
 from players.model_player import ModelPlayer
 from state import PublicState
@@ -68,23 +69,61 @@ def read_model_stats():
 
 
 def q_values(model, state: PublicState, env):
-    obs = spaces.flatten(env.observation_space_nested, state.as_dict(played=False))
+    obs = spaces.flatten(env.observation_space_nested, state.as_dict(played=env.played))
     t, _ = model.policy.obs_to_tensor(obs)
     return model.q_net(t).detach().numpy().squeeze()
 
 
-def print_actions_for_state(hand, table, briscola):
-    env = BriscolaRulesPlayer(played=False)
-    model = DQN.load('../checkpoints/graceful-darkness', env)
-    state = PublicState(0, 0, hand, 2, 34, table, [], [], 1, briscola, 1)
-    plt.title("Briscola: " + briscola.__repr__() + "\nOpponent played: " + table[0].__repr__())
-    sns.barplot(dict(
-        x=[c.__repr__() for c in hand],
-        y=q_values(model, state, env)
-    ), x='x', y='y')
-    plt.xlabel("Hand")
-    plt.ylabel("Q value")
-    plt.grid(True)
+def print_actions_for_state_subplots(hand, table, briscola, models):
+    df = pd.read_csv('../data/rules_best.csv')
+
+    f, axes = plt.subplots(4, 2, figsize=(9,9), sharex=True, sharey=True)
+
+    plt.suptitle("Briscola: " + briscola.__repr__() + "\nOpponent played: " + table[0].__repr__())
+    for i,model_name in enumerate(models):
+        model = DQN.load(f'../checkpoints/{model_name}')
+        in_features = model.policy.q_net.q_net[0].in_features
+        played = in_features == 2999
+        env = BriscolaRulesPlayer(played=played)
+        model.env = env
+        state = PublicState(0, 0, hand, 2, 34, table, [], [], 1, briscola, 1)
+
+        axes.flat[i].set_title(model_name)
+        colors = ['y'] * 3
+        q_vals = q_values(model, state, env)
+        colors[np.argmax(q_vals)] = 'r'
+        sns.barplot(dict(
+            x=[c.__repr__() for c in hand],
+            y=q_vals,
+        ), x='x', y='y', ax=axes.flat[i], palette=colors)
+        axes.flat[i].set_xlabel('')
+        axes.flat[i].set_ylabel('')
+        plt.grid(True)
+
+    plt.show()
+
+
+def print_actions_for_state(hand, table, briscola, models):
+    results = []
+    x_hand = [c.__repr__() for c in hand]
+
+    for model_name in models:
+        env = BriscolaRulesPlayer(played=False)
+        model = DQN.load(f'../checkpoints/{model_name}', env)
+        state = PublicState(0, 0, hand, 2, 34, table, [], [], 1, briscola, 1)
+
+        q_vals = q_values(model, state, env)
+
+        for i in range(3):
+            results.append({
+                'model': model_name,
+                'card': x_hand[i],
+                'q_value': q_vals[i]
+            })
+
+    df = pd.DataFrame(results)
+    #sns.barplot(df, x='model', y='q_value', hue='card')
+    sns.heatmap(df.pivot(index="model", columns="card", values="q_value"), fmt=".2f", annot=True, cmap='mako')
     plt.show()
 
 
@@ -321,7 +360,23 @@ if __name__ == '__main__':
     sns.set_theme()
     # heatmap_vs_best_models(n_eval_episodes=100)
     # read_model_stats()
-    # print_actions_for_state([Card(1, 1), Card(1, 2), Card(1, 3)], [Card(6, 2)], Card(2, 1))
+
+    #hand = [Card(4, 1), Card(1, 3), Card(1, 1)]
+    #briscola = Card(2, 1)
+    #table = [Card(3, 3)]
+    #print_actions_for_state_subplots(
+    #    hand,
+    #    table,
+    #    briscola,
+    #    ['blooming-bird', 'true-star', 'graceful-darkness', 'autumn-night', 'laced-pond', 'snowy-shape', 'mild-aaldvark', 'lively-cosmos']
+    #)
+    #print_actions_for_state_subplots(
+    #    hand,
+    #    table,
+    #    briscola,
+    #    ['chocolate-cherry', 'upbeat-darkness', 'helpful-sound', 'cosmic-firebrand', 'atomic-dragon', 'hardy-galaxy', 'skilled-serenity', 'kind-surf']
+    #)
+
     #best_bar_plot()
     #rules_results_stacked_bar_plot()
     #lengths_rewards_correlations()
