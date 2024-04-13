@@ -1,3 +1,4 @@
+import hashlib
 import os
 
 import numpy as np
@@ -193,6 +194,67 @@ def lengths_rewards_correlations():
     #                hue='strategy')
     #plt.title('Average reward against win rate - to the top right is better')
     #plt.show()
+
+def reinforce_plot():
+    import dill
+
+    pickles_folder = '../pickles'
+    lst = []
+    for filename in os.listdir(pickles_folder):
+        filepath = os.path.join(pickles_folder, filename)
+        dat = dill.load(open(filepath, 'rb'))
+        if dat['num_iterations'] > 10000:
+            continue
+
+        for index, it in enumerate(range(0, dat['num_iterations'], dat['eval_interval'])):
+            hasher = hashlib.sha1(filename.encode())
+            lst.append({
+                'run': hasher.hexdigest()[:4],
+                'iteration': it,
+                'sparse_reward': dat['sparse_reward'],
+                'penalty': dat['penalty'],
+                'dense_reward': dat['dense_reward'],
+                'learning_rate': dat['learning_rate'],
+                'fc_layer_params': dat['fc_layer_params'],
+                'replay_buffer_capacity': dat['replay_buffer_capacity'],
+                'return': dat['returns'][index]
+            })
+        #sns.lineplot(dat, y=dat['returns'], x=np.linspace(0, dat['num_iterations'], len(dat['returns'])), color=['b', 'g'][dat['sparse_reward']])
+        # sns.regplot(dat, y=dat['returns'], x=np.linspace(0, dat['num_iterations'], len(dat['returns'])), scatter_kws={'s':4})
+
+    df = pd.DataFrame(lst)
+
+    plt.figure(figsize=(12,6))
+    ax = sns.lineplot(df, y='return', x='iteration', hue='run')
+    sns.move_legend(
+        ax, loc="upper left", ncol=1, frameon=True, columnspacing=1, handletextpad=0.3, bbox_to_anchor=(1,1)
+    )
+    plt.title('REINFORCE runs - under 10000 iterations', weight='bold', fontsize=18)
+    plt.xlabel('Iterations')
+    plt.ylabel('Returns')
+    plt.show()
+
+    #plt.figure(figsize=(12,6))
+    #ax = sns.lmplot(df, y='return', x='iteration', hue='sparse_reward', height=10, aspect=1.2)
+    #plt.suptitle('REINFORCE runs - sparse reward', weight='bold', fontsize=18)
+    #plt.xlabel('Iterations')
+    #plt.ylabel('Returns')
+    #plt.show()
+
+    #plt.figure(figsize=(12,6))
+    #ax = sns.lmplot(df, y='return', x='iteration', hue='dense_reward', height=10, aspect=1.2)
+    #plt.suptitle('REINFORCE runs - dense reward', weight='bold', fontsize=18)
+    #plt.xlabel('Iterations')
+    #plt.ylabel('Returns')
+    #plt.show()
+
+    #plt.figure(figsize=(12,6))
+    #ax = sns.lmplot(df, y='return', x='iteration', hue='penalty', height=10, aspect=1.2)
+    #plt.suptitle('REINFORCE runs - penalty reward', weight='bold', fontsize=18)
+    #plt.xlabel('Iterations')
+    #plt.ylabel('Returns')
+    #plt.show()
+
 
 def played_vs_not_played_plot():
     df = pd.concat([
